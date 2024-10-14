@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-4">Task Management</h1>
+        <form name="taskForm" class="mb-4">
+            <div class="form-group">
+                <label for="description">Task Description:</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            <input type="submit" value="Add Task" class="btn btn-primary">
+        </form>
+
+        <h2>Task List</h2>
+        <div id="taskList"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function validateForm() {
+            var description = document.forms["taskForm"]["description"].value.trim();
+            if (description == "") {
+                alert("Task description must be filled out and cannot be only spaces");
+                return false;
+            }
+            return true;
+        }
+
+        function loadTasks() {
+            $.ajax({
+                url: "task_list.php",
+                method: "GET",
+                success: function(response) {
+                    $("#taskList").html(response);
+                }
+            });
+        }
+
+        function addTask(event) {
+            event.preventDefault();
+            if (!validateForm()) return;
+
+            var formData = $("form[name='taskForm']").serialize();
+            $.ajax({
+                url: "task.php",
+                method: "POST",
+                data: formData,
+                success: function() {
+                    loadTasks();
+                    $("form[name='taskForm']")[0].reset();
+                }
+            });
+        }
+
+        function updateStatus(id, status) {
+            $.ajax({
+                url: "task_update.php",
+                method: "POST",
+                data: { id: id, status: status },
+                success: function() {
+                    loadTasks();
+                }
+            });
+        }
+
+        function deleteTask(id) {
+            Swal.fire({
+                title: 'Delete task?',
+                text: "Are you sure you want to delete this task?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "task_delete.php",
+                        method: "POST",
+                        data: { id: id },
+                        success: function() {
+                            loadTasks();
+                            Swal.fire(
+                                'Deleted!',
+                                'Your task has been deleted.',
+                                'success'
+                            );
+                        }
+                    });
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            loadTasks();
+            $("form[name='taskForm']").on("submit", addTask);
+        });
+    </script>
+</body>
+</html>
